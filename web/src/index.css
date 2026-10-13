@@ -1,0 +1,87 @@
+@import 'tailwindcss';
+
+/* Fonts ship with the app so they work offline. Latin subsets only. */
+@font-face {
+  font-family: 'Inter Variable';
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
+}
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2') format('woff2-variations');
+}
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-italic.woff2') format('woff2-variations');
+}
+
+/* Paper planner: a warm desk, white sheets, soft-black ink, one ruled-line colour. */
+@theme {
+  --color-bg: #efeae0;
+  --color-sheet: #fffdf9;
+  --color-ink: #2d2a26;
+  --color-muted: #857e72;
+  --color-line: #ddd6c8;
+  --color-accent: #3f6b57;
+  --color-danger: #b4483c;
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1c1a17;
+    --color-sheet: #26231f;
+    --color-ink: #ece6da;
+    --color-muted: #a09888;
+    --color-line: #3b372f;
+    --color-accent: #8fc1a6;
+    --color-danger: #e08b7f;
+  }
+}
+
+html {
+  color-scheme: light dark;
+  /* Keeps the page from shifting sideways between screens that do and do not scroll. */
+  scrollbar-gutter: stable;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+@layer components {
+  /* Every control is 40px tall so rows of buttons and fields share a baseline. */
+  .btn {
+    @apply inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-line bg-sheet px-4 text-sm font-medium whitespace-nowrap text-ink transition hover:border-muted active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply border-ink bg-ink text-sheet hover:border-ink;
+  }
+  .btn-danger {
+    @apply border-danger text-danger hover:border-danger;
+  }
+  .btn-icon {
+    @apply w-10 px-0 text-lg;
+  }
+  .field {
+    @apply h-10 w-full rounded-md border border-line bg-sheet px-3 text-ink outline-none placeholder:text-muted/70 focus:border-ink;
+  }
+  .label {
+    @apply text-sm text-muted;
+  }
+  .hint {
+    @apply text-xs text-muted;
+  }
+}
