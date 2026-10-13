@@ -27,7 +27,9 @@ export interface Ctx {
 
 export async function buildApp(ctx: Ctx): Promise<FastifyInstance> {
   const { db, config } = ctx;
-  const app = Fastify({ logger: config.logger, trustProxy: config.trustProxy, bodyLimit: 5 * 1024 * 1024 });
+  // Proxy headers are trusted so that, behind an HTTPS proxy or tunnel, the app
+  // sees the real client address and knows the connection is secure.
+  const app = Fastify({ logger: config.logger, trustProxy: true, bodyLimit: 5 * 1024 * 1024 });
 
   await app.register(cookie);
   await app.register(rateLimit, { global: false });

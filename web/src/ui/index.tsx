@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { type CSSProperties, type ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // The shared building blocks. Pages compose these and set no widths, header
@@ -34,7 +34,7 @@ export function Page({ title, actions, back, narrow, children }: PageProps) {
             ‹
           </button>
         )}
-        <h1 className="min-w-0 flex-1 truncate font-display text-2xl leading-10">{title}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-2xl leading-10 font-semibold tracking-tight">{title}</h1>
         {actions}
       </header>
       {children}
@@ -55,7 +55,7 @@ interface SheetProps {
 /** A sheet of paper: the only kind of panel in the app. */
 export function Sheet({ title, aside, flush, className = '', children }: SheetProps) {
   return (
-    <section className={`overflow-hidden rounded-lg border border-line bg-sheet ${className}`}>
+    <section className={`sheet ${className}`}>
       {title && (
         <div className="flex h-11 items-center justify-between gap-3 border-b border-line px-4">
           <h2 className="text-xs font-semibold tracking-[0.14em] text-muted uppercase">{title}</h2>
@@ -83,8 +83,8 @@ interface SquareProps {
 }
 
 export function Square({ size = 32, fill, checked, dim, selected, onClick, label, title, disabled, children }: SquareProps) {
-  const style: CSSProperties = { width: size, height: size, background: fill };
-  const className = `inline-flex shrink-0 items-center justify-center rounded-[4px] border text-xs tabular-nums ${
+  const style: CSSProperties = { width: size, height: size, background: fill, borderRadius: size < 20 ? 4 : 8 };
+  const className = `inline-flex shrink-0 items-center justify-center border text-xs tabular-nums ${
     selected ? 'border-ink' : 'border-line'
   } ${dim ? 'opacity-40' : ''}`;
   const content = (
@@ -140,6 +140,44 @@ export function Stat({ label, value, hint }: { label: string; value: ReactNode; 
       <p className="text-xs tracking-wide text-muted uppercase">{label}</p>
       <p className="font-display text-2xl leading-9 tabular-nums">{value}</p>
       {hint && <p className="hint">{hint}</p>}
+    </div>
+  );
+}
+
+interface ConfirmProps {
+  title: string;
+  children: ReactNode;
+  /** Label of the button that goes ahead, e.g. "Delete". */
+  confirmLabel: string;
+  busy?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+/** The app's own confirmation dialog, for actions that cannot be undone. */
+export function Confirm({ title, children, confirmLabel, busy, onConfirm, onCancel }: ConfirmProps) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCancel();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4 backdrop-blur-sm" onClick={onCancel}>
+      <div className="sheet w-full max-w-sm p-5" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onClick={(e) => e.stopPropagation()}>
+        <h2 id="confirm-title" className="text-lg font-semibold tracking-tight">
+          {title}
+        </h2>
+        <div className="mt-2 text-sm text-muted">{children}</div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" className="btn" onClick={onCancel} autoFocus>
+            Cancel
+          </button>
+          <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={busy}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

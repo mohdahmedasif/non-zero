@@ -12,6 +12,10 @@ export const habitInput = z.object({
   target: z.number().positive().max(1_000_000),
   unit: z.string().trim().max(20),
   weekdays: z.number().int().min(1, 'Pick at least one day').max(127),
+  monthWeek: z
+    .union([z.literal(-1), z.number().int().min(1).max(4)])
+    .nullable()
+    .optional(),
   reminderTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
@@ -30,6 +34,7 @@ export interface HabitRow {
   target: number;
   unit: string;
   weekdays: number;
+  month_week: number | null;
   reminder_time: string | null;
   sort_order: number;
   archived_at: number | null;
@@ -47,6 +52,7 @@ export function toHabit(row: HabitRow): Habit {
     target: row.target,
     unit: row.unit,
     weekdays: row.weekdays,
+    monthWeek: row.month_week,
     reminderTime: row.reminder_time,
     sortOrder: row.sort_order,
     archivedAt: row.archived_at,
@@ -74,8 +80,8 @@ export function habitRoutes(app: FastifyInstance, { db }: Ctx): void {
       .prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM habits WHERE profile_id = ?')
       .get(req.profileId) as { next: number };
     db.prepare(
-      `INSERT INTO habits (id, profile_id, name, emoji, color, type, target, unit, weekdays, reminder_time, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO habits (id, profile_id, name, emoji, color, type, target, unit, weekdays, month_week, reminder_time, sort_order, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       id,
       req.profileId,
@@ -86,6 +92,7 @@ export function habitRoutes(app: FastifyInstance, { db }: Ctx): void {
       body.type === 'boolean' ? 1 : body.target,
       body.unit,
       body.weekdays,
+      body.monthWeek ?? null,
       body.reminderTime,
       next,
       now,
@@ -103,7 +110,7 @@ export function habitRoutes(app: FastifyInstance, { db }: Ctx): void {
     const next = { ...toHabit(row), ...patch };
     const archivedAt = archived === undefined ? row.archived_at : archived ? (row.archived_at ?? Date.now()) : null;
     db.prepare(
-      `UPDATE habits SET name = ?, emoji = ?, color = ?, type = ?, target = ?, unit = ?, weekdays = ?,
+      `UPDATE habits SET name = ?, emoji = ?, color = ?, type = ?, target = ?, unit = ?, weekdays = ?, month_week = ?,
          reminder_time = ?, archived_at = ?, updated_at = ? WHERE id = ?`,
     ).run(
       next.name,
@@ -113,6 +120,7 @@ export function habitRoutes(app: FastifyInstance, { db }: Ctx): void {
       next.type === 'boolean' ? 1 : next.target,
       next.unit,
       next.weekdays,
+      next.monthWeek ?? null,
       next.reminderTime,
       archivedAt,
       Date.now(),

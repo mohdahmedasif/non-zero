@@ -123,6 +123,29 @@ export function useDeleteHabit() {
   });
 }
 
+/**
+ * Moves a habit to the place another habit currently holds. Shown at once,
+ * then saved; the server copy is re-read only if saving fails.
+ */
+export function useMoveHabit() {
+  const profileId = useProfileId();
+  const client = useQueryClient();
+  return useCallback(
+    (id: string, targetId: string) => {
+      const key = ['habits', profileId];
+      const habits = [...(client.getQueryData<Habit[]>(key) ?? [])];
+      const from = habits.findIndex((h) => h.id === id);
+      const to = habits.findIndex((h) => h.id === targetId);
+      if (from < 0 || to < 0 || from === to) return;
+      habits.splice(to, 0, ...habits.splice(from, 1));
+      const ordered = habits.map((h, sortOrder) => ({ ...h, sortOrder }));
+      client.setQueryData(key, ordered);
+      api.put('/api/habits/order', { ids: ordered.map((h) => h.id) }).catch(() => client.invalidateQueries({ queryKey: key }));
+    },
+    [client, profileId],
+  );
+}
+
 /** Today's date, kept current across midnight and after the app was in the background. */
 export function useToday(): string {
   const [day, setDay] = useState(today);

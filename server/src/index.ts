@@ -18,9 +18,9 @@ const app = await buildApp({ db, config, push });
 
 const stopReminders = startReminders(db, push, (err) => app.log.error(err));
 
-await app.listen({ port: config.port, host: config.host });
+await app.listen({ port: config.port, host: '0.0.0.0' });
 if (!process.env.ADMIN_KEY) {
-  app.log.info(`Admin key (needed to create profiles) is in ${path.join(config.dataDir, 'admin-key.txt')}`);
+  app.log.info(`Admin key (needed to pair a device) is in ${path.join(config.dataDir, 'admin-key.txt')}`);
 }
 if (!config.webDist) {
   app.log.info('No web build found; run "npm run build" or use the Vite dev server.');

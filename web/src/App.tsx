@@ -40,14 +40,14 @@ function Shell() {
       <header className="sticky top-0 z-30 border-b border-line bg-bg/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className={`${FRAME} grid h-14 grid-cols-[1fr_auto] items-center gap-4 lg:grid-cols-[1fr_auto_1fr]`}>
           <Wordmark />
-          <nav className="hidden gap-1 lg:flex" aria-label="Main">
+          <nav className="hidden rounded-full bg-line/60 p-1 lg:flex" aria-label="Main">
             {tabs.map((tab) => (
               <NavLink
                 key={tab.to}
                 to={tab.to}
                 end={tab.to === '/'}
                 className={({ isActive }) =>
-                  `flex h-10 items-center rounded-md px-4 text-sm font-medium ${isActive ? 'bg-sheet text-ink shadow-[inset_0_0_0_1px_var(--color-line)]' : 'text-muted hover:text-ink'}`
+                  `flex h-8 items-center rounded-full px-5 text-sm font-medium transition-colors ${isActive ? 'bg-sheet text-ink shadow-sm' : 'text-muted hover:text-ink'}`
                 }
               >
                 {tab.label}
@@ -63,7 +63,7 @@ function Shell() {
               </span>
             )}
             <span className="flex h-10 items-center gap-2 text-sm" title="Current profile">
-              <span className="flex size-7 items-center justify-center rounded-[4px] border border-line" style={{ background: pastel(profile.color) }}>
+              <span className="flex size-7 items-center justify-center rounded-md border border-line" style={{ background: pastel(profile.color) }}>
                 {profile.emoji}
               </span>
               <span className="hidden max-w-40 truncate sm:block">{profile.name}</span>

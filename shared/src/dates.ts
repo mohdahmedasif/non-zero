@@ -34,6 +34,17 @@ export function weekdayOf(date: string): number {
   return new Date(toUtc(date)).getUTCDay();
 }
 
+/**
+ * Whether a date is the nth (1 to 4) occurrence of its weekday in its month,
+ * or the last one for -1. Null means any week.
+ */
+export function inMonthWeek(date: string, monthWeek: number | null): boolean {
+  if (monthWeek === null) return true;
+  const [y, m, d] = date.split('-').map(Number);
+  if (monthWeek === -1) return d + 7 > new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return Math.ceil(d / 7) === monthWeek;
+}
+
 export interface LocalParts {
   date: string;
   time: string;

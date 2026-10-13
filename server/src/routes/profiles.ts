@@ -1,6 +1,6 @@
 import type { Profile } from '@non-zero/shared';
 import crypto from 'node:crypto';
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app';
 import {
@@ -36,16 +36,20 @@ interface ProfileRow extends Profile {
 }
 
 const PUBLIC_COLUMNS = 'id, name, color, emoji';
-// Slows guessing of the admin key and of PINs from a single address.
-const guessLimit = { config: { rateLimit: { max: 20, timeWindow: '5 minutes' } } };
+// Slows guessing of the admin key and of PINs. The count is shared by all
+// visitors rather than kept per address, so it cannot be dodged by switching
+// or faking addresses; the cost is that a flood of attempts briefly blocks
+// everyone, the owner included.
+const guessLimit = { config: { rateLimit: { max: 20, timeWindow: '5 minutes', keyGenerator: () => 'everyone' } } };
 
 export function publicRoutes(app: FastifyInstance, { db, config }: Ctx): void {
-  const cookieOptions = {
+  // Cookies are HTTPS-only whenever the request itself arrived over HTTPS.
+  const cookieOptions = (req: FastifyRequest) => ({
     path: '/',
     httpOnly: true,
     sameSite: 'strict' as const,
-    secure: config.cookieSecure,
-  };
+    secure: req.protocol === 'https',
+  });
 
   const requireAdmin = (key: string, reply: FastifyReply): boolean => {
     if (safeEqual(key, config.adminKey)) return true;
@@ -60,15 +64,15 @@ export function publicRoutes(app: FastifyInstance, { db, config }: Ctx): void {
     if (!requireAdmin(body.adminKey, reply)) return;
     unpairDevice(db, req.cookies[DEVICE_COOKIE]);
     const label = String(req.headers['user-agent'] ?? 'Unknown device').slice(0, 200);
-    reply.setCookie(DEVICE_COOKIE, pairDevice(db, label), { ...cookieOptions, maxAge: DEVICE_TTL_MS / 1000 });
+    reply.setCookie(DEVICE_COOKIE, pairDevice(db, label), { ...cookieOptions(req), maxAge: DEVICE_TTL_MS / 1000 });
     return { paired: true };
   });
 
   app.post('/api/device/unpair', async (req, reply) => {
     deleteSession(db, req.cookies[SESSION_COOKIE]);
     unpairDevice(db, req.cookies[DEVICE_COOKIE]);
-    reply.clearCookie(SESSION_COOKIE, cookieOptions);
-    reply.clearCookie(DEVICE_COOKIE, cookieOptions);
+    reply.clearCookie(SESSION_COOKIE, cookieOptions(req));
+    reply.clearCookie(DEVICE_COOKIE, cookieOptions(req));
     return { ok: true };
   });
 
@@ -129,17 +133,17 @@ export function publicRoutes(app: FastifyInstance, { db, config }: Ctx): void {
     db.prepare('UPDATE profiles SET failed_attempts = 0, locked_until = NULL WHERE id = ?').run(profile.id);
     deleteSession(db, req.cookies[SESSION_COOKIE]);
     reply.setCookie(SESSION_COOKIE, createSession(db, profile.id, now), {
-      ...cookieOptions,
+      ...cookieOptions(req),
       maxAge: SESSION_TTL_MS / 1000,
     });
     // Using the device keeps it paired for another year.
-    reply.setCookie(DEVICE_COOKIE, req.cookies[DEVICE_COOKIE]!, { ...cookieOptions, maxAge: DEVICE_TTL_MS / 1000 });
+    reply.setCookie(DEVICE_COOKIE, req.cookies[DEVICE_COOKIE]!, { ...cookieOptions(req), maxAge: DEVICE_TTL_MS / 1000 });
     return { id: profile.id, name: profile.name, color: profile.color, emoji: profile.emoji };
   });
 
   app.post('/api/auth/lock', async (req, reply) => {
     deleteSession(db, req.cookies[SESSION_COOKIE]);
-    reply.clearCookie(SESSION_COOKIE, cookieOptions);
+    reply.clearCookie(SESSION_COOKIE, cookieOptions(req));
     return { ok: true };
   });
 }

@@ -8,11 +8,8 @@ import { type PushMessage, type PushTarget, runReminders } from '../src/reminder
 const ADMIN_KEY = 'test-admin-key';
 const config: Config = {
   port: 0,
-  host: '127.0.0.1',
   dataDir: '',
   adminKey: ADMIN_KEY,
-  cookieSecure: false,
-  trustProxy: false,
   logger: false,
   webDist: null,
   vapid: { publicKey: 'public', privateKey: 'private', subject: 'mailto:test@localhost' },
@@ -125,6 +122,35 @@ describe('device pairing', () => {
     expect(wrong.status).toBe(403);
     expect(wrong.cookie).toBeUndefined();
     expect((await call({ method: 'GET', url: '/api/device' })).json).toEqual({ paired: true });
+  });
+
+  it('marks cookies HTTPS-only exactly when the request came over HTTPS', async () => {
+    const pairOver = async (proto: string) => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/device/pair',
+        payload: { adminKey: ADMIN_KEY },
+        headers: { 'x-forwarded-proto': proto },
+      });
+      return String(res.headers['set-cookie']);
+    };
+    expect(await pairOver('https')).toContain('Secure');
+    expect(await pairOver('http')).not.toContain('Secure');
+  });
+
+  it('caps pairing attempts for all visitors together, whatever address they claim', async () => {
+    const attempt = (n: number) =>
+      app.inject({
+        method: 'POST',
+        url: '/api/device/pair',
+        payload: { adminKey: 'guess' },
+        headers: { 'x-forwarded-for': `203.0.113.${n}` },
+      });
+    const statuses: number[] = [];
+    for (let n = 1; n <= 25; n++) statuses.push((await attempt(n)).statusCode);
+    // One attempt was already used to pair in beforeEach.
+    expect(statuses.filter((s) => s === 403)).toHaveLength(19);
+    expect(statuses.slice(19).every((s) => s === 429)).toBe(true);
   });
 
   it('rejects a made-up pairing cookie', async () => {
@@ -255,6 +281,16 @@ describe('habits and entries', () => {
       body: habit({ name: 'Water', type: 'quantity', target: 8, unit: 'glasses' }),
     });
     expect(water.json).toMatchObject({ type: 'quantity', target: 8, unit: 'glasses', sortOrder: 1 });
+  });
+
+  it('stores a monthly schedule and rejects impossible ones', async () => {
+    const { cookie } = await unlock(await createProfile('Health', '1234'), '1234');
+    const created = await call({ method: 'POST', url: '/api/habits', cookie, body: habit({ name: 'Budgeting', weekdays: 64, monthWeek: -1 }) });
+    expect(created.json.monthWeek).toBe(-1);
+    const weekly = await call({ method: 'PATCH', url: `/api/habits/${created.json.id}`, cookie, body: { monthWeek: null } });
+    expect(weekly.json.monthWeek).toBeNull();
+    expect((await call({ method: 'POST', url: '/api/habits', cookie, body: habit() })).json.monthWeek).toBeNull();
+    expect((await call({ method: 'POST', url: '/api/habits', cookie, body: habit({ monthWeek: 5 }) })).status).toBe(400);
   });
 
   it('archives and restores a habit', async () => {

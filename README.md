@@ -17,10 +17,12 @@ docker build -t non-zero .
 ```
 
 ```bash
-docker run -d --name non-zero --restart unless-stopped -p 3210:3210 -v non-zero-data:/app/data non-zero
+docker run -d --name non-zero --restart unless-stopped --env-file .env -p 3210:3210 -v non-zero-data:/app/data non-zero
 ```
 
-Open http://localhost:3210. The first visit on each device asks for the **admin key**:
+Copy `.env.example` to `.env` first and set `ADMIN_KEY` to a long random value. Open http://localhost:3210; the first visit on each device asks for that key.
+
+If you leave `ADMIN_KEY` empty, one is generated and you can read it with:
 
 ```bash
 docker exec non-zero cat /app/data/admin-key.txt
@@ -42,7 +44,9 @@ npm run build
 npm start
 ```
 
-`npm run dev` starts the API and a hot-reloading web app for development. Settings are in `.env`; see `.env.example`.
+`npm run dev` starts the API and a hot-reloading web app for development.
+
+There are two optional settings, `PORT` and `ADMIN_KEY`, read from the environment or a `.env` file; see `.env.example`.
 
 ## Using it on a phone
 
@@ -51,12 +55,13 @@ Phones only install the app, keep you signed in, and allow reminders over **HTTP
 - **Tailscale** (`tailscale serve 3210`): reachable only from your own devices
 - **Cloudflare Tunnel** or **Caddy** on a server with a domain: reachable from anywhere
 
-Set `TRUST_PROXY=1` when running behind any of these. Then open the address on the phone and choose "Add to Home Screen".
+Then open the address on the phone and choose "Add to Home Screen".
 
 ## Security
 
 - A browser must be paired once with the admin key before it can see profiles or try a PIN.
 - PINs are 4 to 8 digits, stored as salted scrypt hashes; repeated wrong attempts lock the profile for increasing periods.
+- Rate limits are shared. The limit of 20 pairing attempts per 5 minutes counts everyone together instead of per visitor. Guessing is capped just as hard, but someone hammering the pairing screen could block you from pairing a new device for a few minutes. The same applies to PIN resets, and to PIN attempts from paired devices.
 - The PIN separates profiles on a shared device. It does not encrypt the copy of your data cached on that device for offline use.
 
 ## Backup

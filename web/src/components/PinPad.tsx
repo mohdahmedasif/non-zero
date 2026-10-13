@@ -48,7 +48,7 @@ export function PinPad({ onSubmit, disabled = false, submitLabel = 'Unlock' }: P
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const key = 'h-14 rounded-md border border-line bg-sheet text-xl tabular-nums hover:border-muted active:bg-bg disabled:opacity-40';
+  const key = 'h-14 rounded-xl border border-line bg-sheet text-xl tabular-nums hover:border-muted active:bg-bg disabled:opacity-40';
 
   return (
     <div>

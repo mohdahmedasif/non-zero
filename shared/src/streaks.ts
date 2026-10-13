@@ -1,14 +1,14 @@
-import { addDays, toDateStr, weekdayOf } from './dates';
+import { addDays, inMonthWeek, toDateStr, weekdayOf } from './dates';
 import type { Habit } from './types';
 
-type Schedule = Pick<Habit, 'weekdays'>;
+type Schedule = Pick<Habit, 'weekdays'> & { monthWeek?: number | null };
 type Goal = Pick<Habit, 'type' | 'target'>;
 
 export const EVERY_DAY = 127;
 
 export function isScheduled(habit: Schedule, date: string): boolean {
   const mask = habit.weekdays & EVERY_DAY || EVERY_DAY;
-  return (mask & (1 << weekdayOf(date))) !== 0;
+  return (mask & (1 << weekdayOf(date))) !== 0 && inMonthWeek(date, habit.monthWeek ?? null);
 }
 
 export function goalOf(habit: Goal): number {

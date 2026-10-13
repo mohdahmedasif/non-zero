@@ -26,7 +26,7 @@ export function ProfilePicker() {
         {profiles?.map((p) => (
           <li key={p.id}>
             <button type="button" onClick={() => setChosen(p)} className="flex h-14 w-full items-center gap-3 border-b border-line px-4 text-left hover:bg-bg/40">
-              <span className="flex size-8 items-center justify-center rounded-[4px] border border-line" style={{ background: pastel(p.color) }}>
+              <span className="flex size-8 items-center justify-center rounded-md border border-line" style={{ background: pastel(p.color) }}>
                 {p.emoji}
               </span>
               <span className="min-w-0 flex-1 truncate">{p.name}</span>

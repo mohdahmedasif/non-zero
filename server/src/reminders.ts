@@ -50,7 +50,7 @@ export async function runReminders(db: DB, push: PushSender, now = new Date()): 
   for (const sub of subscriptions) {
     const local = localParts(sub.timezone, now);
     for (const habit of dueHabits.all(sub.profile_id, local.time) as HabitRow[]) {
-      if (!isScheduled(habit, local.date)) continue;
+      if (!isScheduled({ weekdays: habit.weekdays, monthWeek: habit.month_week }, local.date)) continue;
       const entry = valueOn.get(habit.id, local.date) as { value: number } | undefined;
       if (isDone(habit, entry?.value)) continue;
       try {

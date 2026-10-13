@@ -90,8 +90,8 @@ export function entryRoutes(app: FastifyInstance, { db }: Ctx): void {
     const now = Date.now();
     const owner = db.prepare('SELECT profile_id FROM habits WHERE id = ?');
     const insert = db.prepare(
-      `INSERT INTO habits (id, profile_id, name, emoji, color, type, target, unit, weekdays, reminder_time, sort_order, archived_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO habits (id, profile_id, name, emoji, color, type, target, unit, weekdays, month_week, reminder_time, sort_order, archived_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     const idMap = new Map<string, string>();
     let habitsAdded = 0;
@@ -115,6 +115,7 @@ export function entryRoutes(app: FastifyInstance, { db }: Ctx): void {
           h.type === 'boolean' ? 1 : h.target,
           h.unit,
           h.weekdays,
+          h.monthWeek ?? null,
           h.reminderTime,
           h.sortOrder,
           h.archivedAt,

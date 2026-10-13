@@ -18,6 +18,11 @@ export interface Habit {
   unit: string;
   /** Bitmask of scheduled weekdays, bit 0 = Sunday. 127 = every day. */
   weekdays: number;
+  /**
+   * Narrows the weekdays to one week of the month: 1 to 4 for the first to
+   * fourth occurrence, -1 for the last, null for every week.
+   */
+  monthWeek: number | null;
   /** "HH:MM" in the device's local time, or null for no reminder. */
   reminderTime: string | null;
   sortOrder: number;
@@ -36,7 +41,7 @@ export interface Entry {
 
 export type HabitInput = Pick<
   Habit,
-  'name' | 'emoji' | 'color' | 'type' | 'target' | 'unit' | 'weekdays' | 'reminderTime'
+  'name' | 'emoji' | 'color' | 'type' | 'target' | 'unit' | 'weekdays' | 'monthWeek' | 'reminderTime'
 >;
 
 export interface ExportFile {

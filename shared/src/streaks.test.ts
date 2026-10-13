@@ -51,6 +51,22 @@ describe('computeStreaks', () => {
     expect(computeStreaks(mwf, values, '2026-10-15')).toEqual({ current: 3, longest: 3 });
   });
 
+  it('schedules one week of the month', () => {
+    const lastSaturday = { ...daily, weekdays: 1 << 6, monthWeek: -1 };
+    expect(isScheduled(lastSaturday, '2026-10-24')).toBe(false);
+    expect(isScheduled(lastSaturday, '2026-10-31')).toBe(true);
+    expect(isScheduled(lastSaturday, '2026-11-28')).toBe(true);
+    expect(isScheduled(lastSaturday, '2026-02-28')).toBe(true);
+
+    const firstMonday = { ...daily, weekdays: 1 << 1, monthWeek: 1 };
+    expect(isScheduled(firstMonday, '2026-10-05')).toBe(true);
+    expect(isScheduled(firstMonday, '2026-10-12')).toBe(false);
+
+    // A month between two done days does not break the streak.
+    const values = done('2026-09-26', '2026-10-31');
+    expect(computeStreaks(lastSaturday, values, '2026-11-10')).toEqual({ current: 2, longest: 2 });
+  });
+
   it('needs the target for quantity habits', () => {
     const water = { type: 'quantity', target: 8, weekdays: 127 } as const;
     const values = new Map([

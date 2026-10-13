@@ -68,7 +68,7 @@ export function Settings() {
     <Page title="Settings">
       {wide ? (
         <div className="grid grid-cols-[13rem_minmax(0,40rem)] items-start gap-4">
-          <nav className="overflow-hidden rounded-lg border border-line bg-sheet" aria-label="Settings sections">
+          <nav className="sheet" aria-label="Settings sections">
             {sections.map(([name]) => (
               <button
                 key={name}

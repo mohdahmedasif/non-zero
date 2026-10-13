@@ -6,7 +6,7 @@ import { errorMessage } from '../api/client';
 import { useDeleteHabit, useHabits, useSaveHabit } from '../api/queries';
 import { COLORS, LookPicker } from '../components/LookPicker';
 import { pastel } from '../lib/color';
-import { FormRow, Page, Sheet, Square } from '../ui';
+import { Confirm, FormRow, Page, Sheet, Square } from '../ui';
 
 const HABIT_EMOJIS = ['✅', '💧', '📚', '🏃', '🧘', '🥗', '😴', '✍️', '💊', '🎸'];
 // Monday first; the number is the weekday bit (0 = Sunday).
@@ -18,6 +18,15 @@ const WEEKDAYS: [label: string, bit: number][] = [
   ['Fri', 5],
   ['Sat', 6],
   ['Sun', 0],
+];
+
+const MONTH_WEEKS: [value: number | null, label: string][] = [
+  [null, 'Every week'],
+  [1, 'First week of the month'],
+  [2, 'Second week of the month'],
+  [3, 'Third week of the month'],
+  [4, 'Fourth week of the month'],
+  [-1, 'Last week of the month'],
 ];
 
 export function HabitEdit() {
@@ -47,6 +56,7 @@ function HabitForm({ habit }: { habit?: Habit }) {
     target: habit?.type === 'quantity' ? habit.target : 8,
     unit: habit?.unit ?? '',
     weekdays: habit?.weekdays ?? EVERY_DAY,
+    monthWeek: habit?.monthWeek ?? null,
     reminderTime: habit?.reminderTime ?? null,
   });
   const patch = (changes: Partial<HabitInput>) => setForm((f) => ({ ...f, ...changes }));
@@ -57,11 +67,8 @@ function HabitForm({ habit }: { habit?: Habit }) {
     save.mutate({ id: habit?.id, ...form }, { onSuccess: () => navigate(-1) });
   };
   const archive = () => save.mutate({ id: habit!.id, archived: !habit!.archivedAt }, { onSuccess: () => navigate('/') });
-  const destroy = () => {
-    if (confirm(`Delete "${habit!.name}" and all of its history? This cannot be undone.`)) {
-      remove.mutate(habit!.id, { onSuccess: () => navigate('/') });
-    }
-  };
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const destroy = () => remove.mutate(habit!.id, { onSuccess: () => navigate('/'), onError: () => setConfirmingDelete(false) });
 
   return (
     <Page title={habit ? 'Edit habit' : 'New habit'} back narrow>
@@ -87,7 +94,7 @@ function HabitForm({ habit }: { habit?: Habit }) {
                     type="button"
                     aria-pressed={form.type === type}
                     onClick={() => patch({ type })}
-                    className={`rounded-md border px-3 py-2 text-left ${form.type === type ? 'border-ink' : 'border-line'}`}
+                    className={`rounded-xl border px-3 py-2 text-left ${form.type === type ? 'border-ink' : 'border-line'}`}
                   >
                     <span className="block text-sm font-medium">{title}</span>
                     <span className="hint block">{hint}</span>
@@ -116,6 +123,16 @@ function HabitForm({ habit }: { habit?: Habit }) {
                   );
                 })}
               </span>
+            </FormRow>
+
+            <FormRow label="Repeats" hint={form.monthWeek !== null && 'Only the chosen days that fall in that week of each month.'}>
+              <select className="field" value={form.monthWeek ?? ''} onChange={(e) => patch({ monthWeek: e.target.value === '' ? null : Number(e.target.value) })}>
+                {MONTH_WEEKS.map(([value, label]) => (
+                  <option key={label} value={value ?? ''}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </FormRow>
 
             <FormRow
@@ -150,13 +167,19 @@ function HabitForm({ habit }: { habit?: Habit }) {
               <button type="button" className="btn" onClick={archive}>
                 {habit.archivedAt ? 'Restore' : 'Archive'}
               </button>
-              <button type="button" className="btn btn-danger" onClick={destroy}>
+              <button type="button" className="btn btn-danger" onClick={() => setConfirmingDelete(true)}>
                 Delete
               </button>
             </>
           )}
         </div>
       </form>
+
+      {confirmingDelete && (
+        <Confirm title={`Delete "${habit!.name}"?`} confirmLabel="Delete" busy={remove.isPending} onConfirm={destroy} onCancel={() => setConfirmingDelete(false)}>
+          This removes the habit and all of its history, on every device. It cannot be undone. To hide it and keep the history, archive it instead.
+        </Confirm>
+      )}
     </Page>
   );
 }

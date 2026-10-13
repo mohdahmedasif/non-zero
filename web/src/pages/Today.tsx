@@ -2,12 +2,13 @@ import type { Habit } from '@non-zero/shared';
 import { addDays, computeStreaks, goalOf, isDone, isScheduled, weekdayOf } from '@non-zero/shared';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { type Values, useHabits, useSetEntry, useToday, useValues, valuesOf } from '../api/queries';
+import { type Values, useHabits, useMoveHabit, useSetEntry, useToday, useValues, valuesOf } from '../api/queries';
 import { MonthGrid } from '../components/MonthGrid';
 import { SummaryPanel } from '../components/SummaryPanel';
 import { fillFor } from '../lib/color';
 import { dayTitle, formatDay, formatNumber } from '../lib/format';
 import { isNonZero, stepOf } from '../lib/stats';
+import { DropLine, Grip, useDragReorder } from '../lib/useDragReorder';
 import { useMedia } from '../lib/useMedia';
 import { Page, Sheet, Square } from '../ui';
 
@@ -18,6 +19,7 @@ export function Today() {
   const { data: habits, isPending } = useHabits();
   const values = useValues();
   const setEntry = useSetEntry();
+  const moveHabit = useMoveHabit();
   const wide = useMedia('(min-width: 1024px)');
   const active = habits?.filter((h) => !h.archivedAt) ?? [];
 
@@ -32,13 +34,13 @@ export function Today() {
     return (
       <Page title={formatDay(today, { weekday: 'long', day: 'numeric', month: 'long' })} actions={addHabit}>
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18.75rem]">
-          <MonthGrid habits={active} values={values} today={today} loading={isPending} onChange={setEntry} />
+          <MonthGrid habits={active} values={values} today={today} loading={isPending} onChange={setEntry} onMove={moveHabit} />
           <SummaryPanel habits={active} values={values} today={today} onChange={setEntry} />
         </div>
       </Page>
     );
   }
-  return <DaySheet habits={active} values={values} today={today} loading={isPending} onChange={setEntry} actions={addHabit} />;
+  return <DaySheet habits={active} values={values} today={today} loading={isPending} onChange={setEntry} onMove={moveHabit} actions={addHabit} />;
 }
 
 interface DayProps {
@@ -47,10 +49,11 @@ interface DayProps {
   today: string;
   loading: boolean;
   onChange: (habitId: string, date: string, value: number) => void;
+  onMove: (habitId: string, targetId: string) => void;
   actions: React.ReactNode;
 }
 
-function DaySheet({ habits, values, today, loading, onChange, actions }: DayProps) {
+function DaySheet({ habits, values, today, loading, onChange, onMove, actions }: DayProps) {
   const [date, setDate] = useState(today);
   // The strip shows the seven days ending here.
   const [stripEnd, setStripEnd] = useState(today);
@@ -58,6 +61,10 @@ function DaySheet({ habits, values, today, loading, onChange, actions }: DayProp
 
   const due = habits.filter((h) => isScheduled(h, date));
   const done = due.filter((h) => isDone(h, valuesOf(values, h.id).get(date))).length;
+  const reorder = useDragReorder(
+    due.map((h) => h.id),
+    onMove,
+  );
   const shift = (days: number) => {
     const end = addDays(stripEnd, days) > today ? today : addDays(stripEnd, days);
     setStripEnd(end);
@@ -77,7 +84,7 @@ function DaySheet({ habits, values, today, loading, onChange, actions }: DayProp
             onClick={() => setDate(day)}
             aria-pressed={day === date}
             aria-label={formatDay(day)}
-            className={`flex h-14 flex-col items-center justify-center rounded-md border text-sm tabular-nums ${
+            className={`flex h-14 flex-col items-center justify-center rounded-xl border text-sm tabular-nums ${
               day === date ? 'border-ink bg-ink text-sheet' : 'border-line bg-sheet'
             }`}
           >
@@ -97,6 +104,7 @@ function DaySheet({ habits, values, today, loading, onChange, actions }: DayProp
             <HabitRow
               key={habit.id}
               habit={habit}
+              reorder={reorder}
               value={valuesOf(values, habit.id).get(date) ?? 0}
               streak={computeStreaks(habit, valuesOf(values, habit.id), today).current}
               onChange={(value) => onChange(habit.id, date, value)}
@@ -116,12 +124,15 @@ interface RowProps {
   value: number;
   streak: number;
   onChange: (value: number) => void;
+  reorder: ReturnType<typeof useDragReorder>;
 }
 
-function HabitRow({ habit, value, streak, onChange }: RowProps) {
+function HabitRow({ habit, value, streak, onChange, reorder }: RowProps) {
   const done = isDone(habit, value);
   return (
-    <li className="flex h-16 items-center gap-3 border-b border-line px-4 last:border-b-0">
+    <li className={`relative flex h-16 items-center gap-2 border-b border-line pr-4 pl-1 last:border-b-0 ${reorder.dragging === habit.id ? 'opacity-40' : ''}`} {...reorder.row(habit.id)}>
+      <DropLine at={reorder.marker(habit.id)} />
+      <Grip label={`Reorder ${habit.name}`} className="h-full" {...reorder.grip(habit.id)} />
       <Link to={`/stats/${habit.id}`} className="flex min-w-0 flex-1 items-center gap-3">
         <span className="w-6 text-center text-lg" aria-hidden>
           {habit.emoji}
@@ -161,7 +172,7 @@ function Stepper({ habit, value, onChange }: Pick<RowProps, 'habit' | 'value' | 
         −
       </Square>
       <input
-        className="h-8 w-12 rounded-[4px] border border-line text-center text-sm font-medium tabular-nums outline-none focus:border-ink"
+        className="h-8 w-12 rounded-md border border-line text-center text-sm font-medium tabular-nums outline-none focus:border-ink"
         style={{ background: fillFor(habit, value) }}
         inputMode="decimal"
         aria-label={`${habit.name} amount`}

@@ -11,9 +11,6 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-ENV NODE_ENV=production \
-    PORT=3210 \
-    DATA_DIR=/app/data
 VOLUME /app/data
 EXPOSE 3210
 
