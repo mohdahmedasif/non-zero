@@ -28,14 +28,7 @@ export function PairDevice() {
   return (
     <Gate title="Pair this device" subtitle="Enter the admin key once to use Non-Zero here.">
       <form onSubmit={submit} className="grid gap-5">
-        <FormRow
-          label="Admin key"
-          hint={
-            <>
-              In <code>admin-key.txt</code> in the server data folder.
-            </>
-          }
-        >
+        <FormRow label="Admin key">
           <input className="field" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} autoComplete="off" autoCapitalize="off" spellCheck={false} required autoFocus />
         </FormRow>
         {error && <p className="text-sm text-danger">{error}</p>}

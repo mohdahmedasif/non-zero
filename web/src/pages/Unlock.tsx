@@ -78,14 +78,7 @@ function ResetPin({ profile, onDone }: { profile: Profile; onDone: () => void })
 
   return (
     <form onSubmit={submit} className="grid gap-5">
-      <FormRow
-        label="Admin key"
-        hint={
-          <>
-            In <code>admin-key.txt</code> in the server data folder.
-          </>
-        }
-      >
+      <FormRow label="Admin key">
         <input className="field" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} autoComplete="off" required />
       </FormRow>
       <FormRow label="New PIN" hint="4 to 8 digits.">
