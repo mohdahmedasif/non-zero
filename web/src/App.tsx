@@ -1,6 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { pendingCount } from './api/outbox';
-import { queryClient, useOutboxSync } from './api/queries';
+import { forgetProfileData, useOutboxSync } from './api/queries';
 import { pastel } from './lib/color';
 import { HabitEdit } from './pages/HabitEdit';
 import { PairDevice } from './pages/PairDevice';
@@ -17,7 +17,7 @@ export function App() {
   const { profile, locked } = session.use();
   if (!paired.use()) return <PairDevice />;
   if (!profile) return <ProfilePicker />;
-  if (locked) return <Unlock profile={profile} onBack={() => switchProfile().then(() => queryClient.clear())} />;
+  if (locked) return <Unlock profile={profile} onBack={() => switchProfile().then(forgetProfileData)} />;
   return <Shell />;
 }
 

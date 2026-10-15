@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, errorMessage } from '../api/client';
-import { queryClient, useHabits } from '../api/queries';
+import { forgetProfileData, useHabits } from '../api/queries';
 import { LookPicker } from '../components/LookPicker';
 import { disablePush, enablePush, needsInstallForPush, pushEnabled, pushSupported, testPush } from '../lib/push';
 import { useMedia } from '../lib/useMedia';
@@ -296,7 +296,7 @@ function DeviceSection() {
   const unpairThis = () =>
     run(async () => {
       await unpairDevice();
-      queryClient.clear();
+      forgetProfileData();
       return '';
     });
 
@@ -332,7 +332,7 @@ function InstallSection() {
 function SessionSection() {
   const leave = async () => {
     await switchProfile();
-    queryClient.clear();
+    forgetProfileData();
   };
   return (
     <Block
@@ -360,7 +360,7 @@ function DeleteSection({ profile }: { profile: Profile }) {
     e.preventDefault();
     void run(async () => {
       await api.post('/api/profiles/me/delete', { pin });
-      queryClient.clear();
+      forgetProfileData();
       profileRemoved(profile.id);
       return '';
     });

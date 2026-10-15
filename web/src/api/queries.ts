@@ -26,6 +26,15 @@ export const persister = createAsyncStoragePersister({
   key: 'nz.cache',
 });
 
+/**
+ * Drops the cached habits and entries of the profile being left. The public
+ * profile list is kept: the picker that appears next is already loading it,
+ * and wiping it mid-request would leave the picker waiting forever.
+ */
+export function forgetProfileData(): void {
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== 'profiles' });
+}
+
 function useProfileId(): string {
   return session.use().profile!.id;
 }
