@@ -1,0 +1,102 @@
+# DISABLED. Nothing here runs until you re-enable it:
+#   1. Replace the `on:` block below with the commented-out triggers.
+#   2. Remove the `if: false` line from each job (the release job's condition
+#      goes back to the push-to-main check noted beside it).
+#
+# When enabled, this tests every push and pull request. A passing push to main
+# builds a release: the web app is compiled here, production dependencies are
+# installed here, and one tarball is attached to a GitHub release.
+name: Test and build release
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  # pull_request:
+
+# One run per branch; a newer push cancels the older run still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build web app
+        run: npm run build
+
+  release:
+    needs: test
+    # When enabling, use: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: false
+    # Same OS and Node major as the server, so native modules match.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Drop development dependencies
+        run: npm prune --omit=dev
+
+      - name: Assemble release
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          echo "$SHA" > BUILD
+          tar -czf non-zero.tar.gz package.json package-lock.json node_modules shared/package.json shared/src server/package.json server/src server/migrations web/dist BUILD
+          ls -lh non-zero.tar.gz
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAG="build-${SHA::7}"
+          gh release create "$TAG" non-zero.tar.gz \
+            --title "Build ${SHA::7}" \
+            --notes "Built from commit ${SHA}." \
+            --target "$SHA" \
+            --latest

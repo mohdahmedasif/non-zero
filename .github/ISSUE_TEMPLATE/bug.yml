@@ -1,0 +1,33 @@
+name: Bug report
+description: Something is broken or unexpected
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do **not** paste admin keys, PINs, push keys, or real habit data.
+        Use a made-up example if you need to show a habit or entry.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, and what went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Node.js version
+      placeholder: "24"
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context
+      description: Device, browser, or error text (secrets redacted).

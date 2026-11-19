@@ -1,16 +1,32 @@
-# Non-Zero
+<p align="center">
+  <img src="web/public/logo.svg" width="120" alt="Non-Zero logo">
+</p>
 
-A self-hosted habit tracker that installs on your phone and laptop. Named after the "no zero days" idea: do at least one thing every day.
+<h1 align="center">Non-Zero</h1>
 
-- **Month sheet** on a laptop, like a paper habit tracker: one row per habit, one square per day
-- **Day sheet** on a phone, with a week strip to move between days
-- Tick-off habits and amount habits ("8 glasses", "20 minutes")
-- Streaks, completion rates, a year heatmap and weekly bars
-- Several profiles, each behind its own PIN
-- Works offline; changes sync when the server is reachable
-- Optional push reminders, sent only if the habit is not done yet
+<p align="center">
+  <em>Do one thing today. Then do it again tomorrow.</em>
+</p>
 
-## Run with Docker
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2d2a26" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/node-24-339933" alt="Node 24">
+  <img src="https://img.shields.io/badge/sqlite-local-0f766e" alt="SQLite">
+</p>
+
+A self-hosted habit tracker for your phone and laptop, built on the "no zero days" idea: a tiny win beats a perfect plan.
+
+- **Month sheet** on a laptop, like a paper tracker. **Day sheet** on a phone.
+- Tick-off and amount habits ("8 glasses", "20 minutes")
+- Streaks, a year heatmap and weekly bars
+- Profiles with their own PINs
+- Works offline, with optional push reminders that skip what you've already done
+
+## Run it
+
+```bash
+cp .env.example .env
+```
 
 ```bash
 docker build -t non-zero .
@@ -20,61 +36,20 @@ docker build -t non-zero .
 docker run -d --name non-zero --restart unless-stopped --env-file .env -p 3210:3210 -v non-zero-data:/app/data non-zero
 ```
 
-Copy `.env.example` to `.env` first and set `ADMIN_KEY` to a long random value. Open http://localhost:3210; the first visit on each device asks for that key.
+Open http://localhost:3210 and pair the device with your `ADMIN_KEY`. Leave it empty and one is generated in `data/admin-key.txt`.
 
-If you leave `ADMIN_KEY` empty, one is generated and you can read it with:
+Without Docker, use Node 24 and run `npm install`, `npm run build`, then `npm start`.
 
-```bash
-docker exec non-zero cat /app/data/admin-key.txt
-```
+To install it on a phone, serve it over HTTPS with [Tailscale](https://tailscale.com) or a Cloudflare Tunnel, then choose "Add to Home Screen".
 
-## Run without Docker
+## Your data
 
-Needs Node 24.
+One SQLite file plus two keys, all in the `data/` folder. Back that up and you've backed up everything. Each profile can also export and import JSON from Settings.
 
-```bash
-npm install
-```
+## Contribute
 
-```bash
-npm run build
-```
+Fastify + SQLite in `server/`, React in `web/`, shared streak logic in `shared/`. See [CONTRIBUTING.md](CONTRIBUTING.md), and report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
-```bash
-npm start
-```
+## License
 
-`npm run dev` starts the API and a hot-reloading web app for development.
-
-There are two optional settings, `PORT` and `ADMIN_KEY`, read from the environment or a `.env` file; see `.env.example`.
-
-## Using it on a phone
-
-Phones only install the app, keep you signed in, and allow reminders over **HTTPS**. Put the server behind one of:
-
-- **Tailscale** (`tailscale serve 3210`): reachable only from your own devices
-- **Cloudflare Tunnel** or **Caddy** on a server with a domain: reachable from anywhere
-
-Then open the address on the phone and choose "Add to Home Screen".
-
-## Security
-
-- A browser must be paired once with the admin key before it can see profiles or try a PIN.
-- PINs are 4 to 8 digits, stored as salted scrypt hashes; repeated wrong attempts lock the profile for increasing periods.
-- Rate limits are shared. The limit of 20 pairing attempts per 5 minutes counts everyone together instead of per visitor. Guessing is capped just as hard, but someone hammering the pairing screen could block you from pairing a new device for a few minutes. The same applies to PIN resets, and to PIN attempts from paired devices.
-- The PIN separates profiles on a shared device. It does not encrypt the copy of your data cached on that device for offline use.
-
-## Backup
-
-Everything lives in the data folder (the `non-zero-data` volume, or `data/`): the SQLite database, the admin key and the push keys. Each profile can also export and import a JSON file from Settings.
-
-## Development
-
-| Command | What it does |
-|---|---|
-| `npm run dev` | API and web dev server together |
-| `npm test` | Unit and API tests |
-| `npm run typecheck` | Type-check server and web |
-| `npm run build` | Build the web app into `web/dist` |
-
-`shared/` holds types and streak logic, `server/` the Fastify + SQLite API, and `web/` the React app and service worker.
+[MIT](LICENSE)

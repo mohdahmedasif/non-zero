@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/mohdahmedasif/non-zero/security/advisories/new
+    about: Private report. Never paste keys or PINs here.
