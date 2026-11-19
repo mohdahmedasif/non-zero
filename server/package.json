@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@fastify/cookie": "^11.0.0",
+    "@fastify/cookie": "^11.1.5",
     "@fastify/rate-limit": "^10.0.0",
     "@fastify/static": "^10.1.6",
     "@non-zero/shared": "*",
